@@ -1,3 +1,3 @@
 # Coffee
 coding is like coffee
-![My Project ERD](./docs/ERD.png)
+![My Project ERD](./docs/erd.png)
