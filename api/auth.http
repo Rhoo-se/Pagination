@@ -1,0 +1,32 @@
+
+### 1. 회원가입 테스트
+POST http://localhost:8080/api/auth/signup
+Content-Type: application/json
+
+{
+  "email" : "test@example.com",
+  "password" : "password123",
+  "nickname" : "latte"
+}
+
+### 2. 이메일이 중복
+POST http://localhost:8080/api/auth/signup
+Content-Type: application/json
+
+{
+  "email" : "test@example.com",
+  "password" : "password1234",
+  "nickname" : "coffee"
+}
+
+### 3. 닉네임이 중복
+POST http://localhost:8080/api/auth/signup
+Content-Type: application/json
+
+{
+  "email" : "test1234@example.com",
+  "password" : "password1234",
+  "nickname" : "coffee"
+}
+
+
