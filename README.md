@@ -17,3 +17,5 @@
 
 <img width="1364" height="436" alt="N+1 발생" src="https://github.com/user-attachments/assets/c7c9e4d6-54d5-4ccc-b12d-c94f867b3278" />
 
+
+### 3. 문제 해결
