@@ -1,6 +1,8 @@
 # 게시판 기능 성능 측정 기록
 ## ERD
-![My Project ERD](./docs/erd.png)
+
+<img width="864" height="436" alt="ERD" src="https://github.com/user-attachments/assets/1433a9f5-ba23-4363-b983-6171af8bf987" />
+
 
 ## 성능 최적화 (N+1) 문제
 
