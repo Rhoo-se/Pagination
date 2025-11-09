@@ -1,6 +1,8 @@
 package com.project.bulletin_board.config;
 
 
+import com.project.bulletin_board.jwt.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,7 +14,9 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -32,9 +36,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 8. ⭐️ 핵심: API 경로별 접근 권한 설정
                 .authorizeHttpRequests(authorize -> authorize
-                        // "/api/auth/**" (회원가입, 로그인) 경로는 모두 허용
-                        .requestMatchers("/**").permitAll()
-                );
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .anyRequest().authenticated()
+                ).addFilterBefore(jwtAuthenticationFilter,
+                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

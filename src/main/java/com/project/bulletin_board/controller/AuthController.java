@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(summary = "회원가입", description = "신규 사용자의 회원가입 처리")
     @ApiResponses(value = {

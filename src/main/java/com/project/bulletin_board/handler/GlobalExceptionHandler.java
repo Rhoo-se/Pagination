@@ -4,6 +4,7 @@ package com.project.bulletin_board.handler;
 import com.project.bulletin_board.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 /*
@@ -23,5 +24,20 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse("BAD REQUEST", exception.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e) {
+
+        // ⭐️ e.getMessage()가 아닌, BindingResult에서 진짜 에러 메시지를 가져옵니다.
+        String errorMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        ErrorResponse response = new ErrorResponse("BAD_REQUEST", errorMessage);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+//    @ExceptionHandler(RuntimeException.class)
+//    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException e) {
+//        // ⭐️ 서비스에서 던진 메시지를 그대로 사용
+//        ErrorResponse response = new ErrorResponse("NOT_FOUND", e.getMessage());
+//        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND); // 404가 더 적절
+//    }
 
 }
