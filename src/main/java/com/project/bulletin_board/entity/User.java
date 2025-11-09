@@ -1,8 +1,8 @@
 package com.project.bulletin_board.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.*;
@@ -13,6 +13,7 @@ import java.time.*;
 @AllArgsConstructor
 @Getter
 @Setter
+@BatchSize(size = 100)
 @Table(name = "users")
 public class User {
     @Id
@@ -27,5 +28,5 @@ public class User {
     private String nickname;
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 }

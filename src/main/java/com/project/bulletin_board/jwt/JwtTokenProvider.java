@@ -69,7 +69,7 @@ public class JwtTokenProvider {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             // (실제 운영 시에는 e.printStackTrace() 대신 Log.warn() 등을 사용하세요)
-            // e.printStackTrace();
+            e.printStackTrace();
             return false;
         }
     }

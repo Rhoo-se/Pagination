@@ -26,6 +26,9 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+### Java heap dumps ###
+*.hprof
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
