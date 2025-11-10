@@ -9,7 +9,7 @@
 
 -----
 
-## 1. 성능 최적화 (N1) 문제
+## 1. 성능 최적화 (N+1) 문제
 
 ### 1-1. 문제상황
 
@@ -17,20 +17,20 @@
 
 이에 해당 API는 단순 Post(게시글) 엔티티 뿐만 아니라 작성자의 **'닉네임'**, 해당 게시글에 달린 **'댓글의 개수'** 및 **'좋아요 개수'**를 함께 반환해야 했습니다.
 
-하지만 JPA가 제공하는 기본 'findAll()' 메서드와 '.map()'을 이용한 초기 구현은 **N1 문제**를 야기했습니다.
+하지만 JPA가 제공하는 기본 'findAll()' 메서드와 '.map()'을 이용한 초기 구현은 **N+1 문제**를 야기했습니다.
 
 'p6spy'를 통해 확인한 결과, 10개의 게시글을 확인하기 위해 총 **31번(1  10*3)**의 쿼리가 실행되는 것을 확인했습니다.
 
-### 1-2. N1 현상 (Before)
+### 1-2. N+1 현상 (Before)
 
 'p6spy'를 통해 확인한 결과, 게시글 목록 조회 API 요청 한번 당, 다음과 같이 한번의 메인 쿼리 수행 후 연관되어 있는 다른 엔티티를 반복해서 호출하는 것을 확인했습니다.
 
 <details>
 <summary>
-<b>[증거] N1 발생 p6spy 로그 (클릭하여 펼치기)</b>
+<b>[증거] N+1 발생 p6spy 로그 (클릭하여 펼치기)</b>
 </summary>
 
-<img width="1364" height="436" alt="N1 발생" src="[https://github.com/user-attachments/assets/c7c9e4d6-54d5-4ccc-b12d-c94f867b3278](https://github.com/user-attachments/assets/c7c9e4d6-54d5-4ccc-b12d-c94f867b3278)" />
+<img width="1364" height="436" alt="N+1 발생" src="[https://github.com/user-attachments/assets/c7c9e4d6-54d5-4ccc-b12d-c94f867b3278](https://github.com/user-attachments/assets/c7c9e4d6-54d5-4ccc-b12d-c94f867b3278)" />
 </details>
 
 ### 1-3. 문제 해결 (After)
@@ -41,7 +41,7 @@
 
 <details>
 <summary>
-<b>[증거] N1 문제 해결 후 쿼리 로그 (클릭하여 펼치기)</b>
+<b>[증거] N+1 문제 해결 후 쿼리 로그 (클릭하여 펼치기)</b>
 </summary>
 
 <img width="1275" height="222" alt="쿼리 속도 개선" src="[https://github.com/user-attachments/assets/feb7fdbb-6cb2-4d72-ac2f-5545fb938294](https://github.com/user-attachments/assets/feb7fdbb-6cb2-4d72-ac2f-5545fb938294)" />
@@ -86,19 +86,19 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 하지만 100만건에 대해 테스트한 결과, 1페이지를 조회시에도 `ORDER BY`(정렬)가 인덱스를 이용하지 않고, 100만건 전체를 **`filesort`**하는 현상이 발견되었습니다.
 
 **[원인 분석]**
-처음 Offset방식의 쿼리 N1 문제를 해결 할 때, **`LEFT JOIN FETCH p.user`**를 사용했습니다. (Post엔티티와 User엔티티의 JOIN FETCH)
+처음 Offset방식의 쿼리 N+1 문제를 해결 할 때, **`LEFT JOIN FETCH p.user`**를 사용했습니다. (Post엔티티와 User엔티티의 JOIN FETCH)
 
 하지만 `LEFT JOIN FETCH`와 `Pageable`의 `ORDER BY`가 충돌하여 인덱스기준 정렬이 아닌 `filesort`가 실행되었고, 이로인해 성능의 향상이 이루어지지 않았습니다.
 
 `ORDER BY`를 효율적으로 지원하는 인덱스가 정해지지 않은 상황에서 `ORDER BY`와 같은 데이터의 정렬이 일어나게되면, 실시간으로 `filesort`를 실행하였기에 오래걸렸던 것이었습니다.
 
 **[개선이 필요한 사항]**
-인덱스 방식의 정렬을 위해 `JOIN FETCH`의 방식을 포기하고, 이로 인해 다시 생길 N1 문제를 해결하기 위해 **`@BatchSize`**를 활용해보기로 했습니다.
+인덱스 방식의 정렬을 위해 `JOIN FETCH`의 방식을 포기하고, 이로 인해 다시 생길 N+1 문제를 해결하기 위해 **`@BatchSize`**를 활용해보기로 했습니다.
 
-### 3-2. 2차 개선 시도: JOIN FETCH 제거, @BatchSize를 통한 N1 문제 해결
+### 3-2. 2차 개선 시도: JOIN FETCH 제거, @BatchSize를 통한 N+1 문제 해결
 
 **[문제]**
-`filesort` 문제를 해결하기 위해, `LEFT JOIN FETCH`를 제거하였지만, 다시 **N1 문제**가 발생하게 되었습니다.
+`filesort` 문제를 해결하기 위해, `LEFT JOIN FETCH`를 제거하였지만, 다시 **N+1 문제**가 발생하게 되었습니다.
 
 **[해결]**
 이에 `User` 엔티티 클래스에 **`@BatchSize(size = 100)`**를 적용하였습니다.
@@ -151,7 +151,7 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 
 **(이곳에 `EXPLAIN` 캡처를 첨부하여 `filesort` 증거 제시)**
 
-원인을 파악해본 결과 N1 문제를 해결하기 위해 사용했던 **`@Formula`**의 쿼리가 복잡하여 MySQL 옵티마이저가 Cursor방식에서 (`created_at`, `id`) 인덱스를 이용하지 않고 **`filesort`**방식을 채택한 것이 원인이었습니다.
+원인을 파악해본 결과 N+1 문제를 해결하기 위해 사용했던 **`@Formula`**의 쿼리가 복잡하여 MySQL 옵티마이저가 Cursor방식에서 (`created_at`, `id`) 인덱스를 이용하지 않고 **`filesort`**방식을 채택한 것이 원인이었습니다.
 
 ### 3-4. 4차 개선 시도 : 비정규화를 통한 성능 향상
 
@@ -193,7 +193,7 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 
 ### 3-5. 문제 해결 (최종 결론)
 
-깊은페이지에 대한 성능 문제를 해결하면서, N1 문제에 대한 다양한 해결방법을 공부하게 되었습니다. ( **`JOIN FETCH`**, **`@Formula`**, **`@BatchSize`** )
+깊은페이지에 대한 성능 문제를 해결하면서, N+1 문제에 대한 다양한 해결방법을 공부하게 되었습니다. ( **`JOIN FETCH`**, **`@Formula`**, **`@BatchSize`** )
 
 또한 DB에서 데이터를 정렬하여 읽어 들일 때 기준이 없다면 `filesort`가 일어나 데이터 스캔시 많은 시간이 소요되지만,
 
