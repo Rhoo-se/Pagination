@@ -80,27 +80,27 @@
 
 ### 3-1. 1차 개선 시도: JOIN FETCH와 filesort의 충돌
 
-**[문제]**
+**[문제]**  
 API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key값으로 두어 **B-Tree 인덱스**를 설정하였습니다.
 
 하지만 100만건에 대해 테스트한 결과, 1페이지를 조회시에도 `ORDER BY`(정렬)가 인덱스를 이용하지 않고, 100만건 전체를 **`filesort`**하는 현상이 발견되었습니다.
 
-**[원인 분석]**
+**[원인 분석]**  
 처음 Offset방식의 쿼리 N+1 문제를 해결 할 때, **`LEFT JOIN FETCH p.user`**를 사용했습니다. (Post엔티티와 User엔티티의 JOIN FETCH)
 
 하지만 `LEFT JOIN FETCH`와 `Pageable`의 `ORDER BY`가 충돌하여 인덱스기준 정렬이 아닌 `filesort`가 실행되었고, 이로인해 성능의 향상이 이루어지지 않았습니다.
 
 `ORDER BY`를 효율적으로 지원하는 인덱스가 정해지지 않은 상황에서 `ORDER BY`와 같은 데이터의 정렬이 일어나게되면, 실시간으로 `filesort`를 실행하였기에 오래걸렸던 것이었습니다.
 
-**[개선이 필요한 사항]**
+**[개선이 필요한 사항]**  
 인덱스 방식의 정렬을 위해 `JOIN FETCH`의 방식을 포기하고, 이로 인해 다시 생길 N+1 문제를 해결하기 위해 **`@BatchSize`**를 활용해보기로 했습니다.
 
 ### 3-2. 2차 개선 시도: JOIN FETCH 제거, @BatchSize를 통한 N+1 문제 해결
 
-**[문제]**
+**[문제]**  
 `filesort` 문제를 해결하기 위해, `LEFT JOIN FETCH`를 제거하였지만, 다시 **N+1 문제**가 발생하게 되었습니다.
 
-**[해결]**
+**[해결]**  
 이에 `User` 엔티티 클래스에 **`@BatchSize(size = 100)`**를 적용하였습니다.
 
 <details>
@@ -118,15 +118,15 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 
 기존 약 **4000ms**가 걸렸던 API 요청이 인덱스를 적용한 결과 얕은 페이지는 약 **400ms**, 깊은 페이지는 약 **800ms**만에 실행되었습니다.
 
-**[개선이 필요한 사항]**
+**[개선이 필요한 사항]**  
 `filesort` 문제는 해결되었지만 `Offset` 방식의 근본적인 한계로 인해 여전히 1페이지에 비해 2배가량 느림.
 
 ### 3-3. 3차 개선 시도 : No-offset(커서 기반) 적용
 
-**[문제]**
+**[문제]**  
 인덱스를 통해 성능의 향상이 이루어졌지만 Offset방식의 특성상 깊은 페이지에 대한 요청은 여전히 1페이지에 비해 2배가량 느린 것을 확인했습니다.
 
-**[해결]**
+**[해결]**  
 `lastId`, `lastCreatedAt`의 값을 통해 사용자가 가장 최근에 조회한 게시글 목록을 확인하고 그곳에서부터 스캔을 하는 **커서 기반 방식**을 적용하였습니다.
 
 또한 커서 기반 페이지네이션은 `Page`객체를 사용하지 않기 때문에 **총 게시물의 개수를 세지 않아도 되므로**(`countQuery` 생략) 1페이지 요청에 대해 약 240ms 속도 향상도 일어나게되었습니다.
@@ -136,17 +136,17 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 <b>[증거] 커서 방식 p6spy 로그 (클릭하여 펼치기)</b>
 </summary>
 
-[1페이지 조회시 걸리는 시간 : 약 160ms]
+[1페이지 조회시 걸리는 시간 : 약 160ms]  
 <img width="1208" height="289" alt="커서 방식 1페이지 조회" src="[https://github.com/user-attachments/assets/70f758c4-f190-48a8-b546-d66bc3e34133](https://github.com/user-attachments/assets/70f758c4-f190-48a8-b546-d66bc3e34133)" />
 (약 160ms로 Offset 방식에 비해 약40ms 빨라짐)
 
-[50,001페이지 조회시 걸리는 시간 : 약 2000ms] 
+[50,001페이지 조회시 걸리는 시간 : 약 2000ms]   
 <img width="1206" height="166" alt="커서 방식 50000페이지 조회" src="[https://github.com/user-attachments/assets/c7e80432-a09b-4d1c-bcca-9ee97c76806a](https://github.com/user-attachments/assets/c7e80432-a09b-4d1c-bcca-9ee97c76806a)" />
 (3-2의 상황보다 약1200ms 느려짐)
 
 </details>
 
-**[개선이 필요한 사항 (새로운 문제 발견)]**
+**[개선이 필요한 사항 (새로운 문제 발견)]**  
 기존 Offset방식에서 Cursor 방식으로 바꾸었지만, 다시 깊은 페이지에 대한 요청이 1페이지에 대한 요청에 비해 현저하게 느려지는 **새로운 문제**를 발견하였습니다. 
 
 **(이곳에 `EXPLAIN` 캡처를 첨부하여 `filesort` 증거 제시)**
@@ -155,10 +155,10 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 
 ### 3-4. 4차 개선 시도 : 비정규화를 통한 성능 향상
 
-**[문제]**
+**[문제]**  
 `@Formula` 방식은 정확하고 편리하게 원하는 테이블을 만들 수 있었지만, MySQL 옵티마이저의 한계에 부딪혀 여전히 깊은 페이지에 대한 요청에서는 `filesort`를 유발했습니다.
 
-**[해결]**
+**[해결]**  
 `posts`와 1:N 관계에 있는 `post_likes`와 `comments`를 스칼라 서브쿼리로 읽어들이는 것이 아닌, `posts`테이블에 속성으로 추가하도록 **테이블을 수정(비정규화)**하였습니다.
 
 또한 데이터 정규화를 위해 분리했던 기존의 DB가 바뀌게 됨에 따라 `like_count` 업데이트시 발생할 수 있는 **새로운 동시성(경쟁 상태) 문제**를 어떻게 해결할 것인지 다시 한번 고민해 보았습니다.
@@ -172,10 +172,10 @@ API의 속도 향상을 위해 `posts`테이블의 `created_at`과 `id`를 Key�
 <b>[최종 증거] 비정규화  커서 방식 p6spy 로그 (클릭하여 펼치기)</b>
 </summary>
 
-[1페이지 조회시 걸리는 시간 : 약 5ms]
+[1페이지 조회시 걸리는 시간 : 약 5ms]  
 <img width="1270" height="244" alt="커서 방식 1페이지 조회(비정규화 방식)" src="[https://github.com/user-attachments/assets/1fc52a20-e61b-42ce-99d6-98061c57e48c](https://github.com/user-attachments/assets/1fc52a20-e61b-42ce-99d6-98061c57e48c)" />
 
-[50,001페이지 조회시 걸리는 시간 : 약 3ms]
+[50,001페이지 조회시 걸리는 시간 : 약 3ms]  
 <img width="1285" height="228" alt="커서 방식 50001페이지 조회(비정규화방식)" src="[https://github.com/user-attachments/assets/744fb232-ce59-49bc-9756-c2ebdf10969f](https://github.com/user-attachments/assets/744fb232-ce59-49bc-9756-c2ebdf10969f)" />
 
 </details>
