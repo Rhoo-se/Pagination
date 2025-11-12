@@ -1,10 +1,14 @@
 # 게시판 기능 성능 측정 기록
 ## ERD
-
+<기존 ERD>
+데이터 정규화를 위해 posts와 post_likes 테이블을 분리했고, comments와 comment_likes도 분리하였습니다.
 <img width="864" height="436" alt="ERD" src="https://github.com/user-attachments/assets/1433a9f5-ba23-4363-b983-6171af8bf987" />
 
 
-데이터 정규화를 위해 posts와 post_likes 테이블을 분리했고, comments와 comment_likes도 분리하였습니다.
+<비정규화가 진행된 ERD>
+데이터의 읽기속도를 향상시키기 위해 비정규화를 진행하였고, 비정규화를 통해 일어나는 동시성 문제는 DB의 원자성을 기반으로 해결하였습니다.
+<img width="904" height="461" alt="비정규화 ERD" src="https://github.com/user-attachments/assets/b7f243b2-14a8-43ee-ab52-f7f00ec911b1" />
+
 
 ## 성능 최적화 (N+1) 문제
 
