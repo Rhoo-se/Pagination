@@ -4,6 +4,7 @@ import com.project.bulletin_board.entity.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.query.Param;
@@ -32,29 +33,36 @@ public interface PostJpaRepository extends JpaRepository<Post, Long> {
             @Param("boardId") Long boardId, Pageable pageable);
 
     @Query("SELECT p FROM Post p " +
-            "LEFT JOIN FETCH p.user u " + // ⭐️ N+1 방지용 JOIN FETCH
             "WHERE p.boardInfo.id = :boardId " +
-            // ⭐️ 이 부분이 커서의 핵심: 마지막으로 본 글보다 '이전' 글을 찾음
+
             "AND (p.createdAt < :lastCreatedAt " +
             "    OR (p.createdAt = :lastCreatedAt AND p.id < :lastId)) " +
             "ORDER BY p.createdAt DESC, p.id DESC")
     List<Post> findNextPageByCreatedAt(
             @Param("boardId") Long boardId,
-            @Param("lastCreatedAt") LocalDateTime lastCreatedAt, // 👈 마지막 글의 생성일시
-            @Param("lastId") Long lastId,                       // 👈 마지막 글의 ID
-            Pageable pageable // 👈 'LIMIT 10'을 위해 Pageable을 사용
+            @Param("lastCreatedAt") LocalDateTime lastCreatedAt,
+            @Param("lastId") Long lastId,
+            Pageable pageable // 'LIMIT 10'을 위해 Pageable을 사용, 정수로 해도 되지만 이게 표준방법
     );
 
+    @Modifying // CRUD 쿼리에 달아줌
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :postId")
+    void incrementLikeCount(@Param("postId") Long postId);
 
+    // 좋아요 1 감소
+    @Modifying
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount - 1 WHERE p.id = :postId")
+    void decrementLikeCount(@Param("postId") Long postId);
 
+    // 댓글 1 증가
+    @Modifying
+    @Query("UPDATE Post p SET p.commentCount = p.commentCount + 1 WHERE p.id = :postId")
+    void incrementCommentCount(@Param("postId") Long postId);
 
-
-
-
-
-
-
-
+    // 댓글 1 감소
+    @Modifying
+    @Query("UPDATE Post p SET p.commentCount = p.commentCount - 1 WHERE p.id = :postId")
+    void decrementCommentCount(@Param("postId") Long postId);
 
 
 }

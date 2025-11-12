@@ -16,45 +16,39 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 @Component // 이 필터를 Bean으로 등록
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter { // 1. OncePerRequestFilter 상속
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService; // 2. 1단계에서 만든 "번역기" 주입
+    private final UserDetailsService userDetailsService;
 
-    // 3. 실제 필터링 로직은 doFilterInternal에 작성
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        // 1. Request Header에서 "Authorization" 헤더를 찾음
+
         String token = resolveToken(request);
 
-        // 2. 토큰이 유효한지 검사 (validateToken)
+        //토큰 검사
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 3. 토큰이 유효하면, 토큰에서 Subject(email)를 가져옴
+            //토큰이 유효할 때만 사용자 이메일 가져옴
             String email = jwtTokenProvider.getSubject(token);
 
-            // 4. email로 UserDetailsService에서 UserDetails 객체를 가져옴
+            //사용자 이메일을 통해 정보 가져옴
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            // 5. "인증 객체" (Authentication) 생성
-            // (UserDetails, [비밀번호는 null], [권한 목록])
+           //사용자를 인증하는 객체 생성
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-            // 6. ⭐️ Spring Security의 "인증된 사용자"로 등록 ⭐️
-            // SecurityContextHolder에 이 인증 객체를 저장하면,
-            // Spring Security가 이 요청을 "인증된" 것으로 간주합니다.
+            //인증된 사용자로 등록
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-
-        // 7. 다음 필터 체인으로 요청을 전달
         filterChain.doFilter(request, response);
     }
 
-    // "Authorization" 헤더에서 "Bearer " 부분을 떼어내고 토큰만 추출하는 헬퍼 메소드
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
