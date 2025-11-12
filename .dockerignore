@@ -1,0 +1,14 @@
+# .dockerignore
+
+# Git
+.git
+.gitignore
+
+# Gradle
+.gradle
+build/
+!build/libs/*.jar  # 👈 build 폴더는 무시하되, jar 파일은 '제외'
+
+# IntelliJ
+.idea/
+*.iml
