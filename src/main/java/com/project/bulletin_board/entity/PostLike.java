@@ -11,10 +11,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+// 복합키를 명시적으로 알려줘야함
 @Table(name = "post_likes",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_user_post", // (이 이름은 아무거나 쓰셔도 됩니다)
+                        name = "uk_user_post",
                         columnNames = {"user_id", "post_id"}
                 )
         }
@@ -33,10 +34,4 @@ public class PostLike {
     @JoinColumn(name = "post_id")
     private Post post;
 
-//    create table post_likes(
-//            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-//            user_id BIGINT NOT NULL REFERENCES users(id),
-//    post_id BIGINT NOT NULL REFERENCES posts(id),
-//    UNIQUE key uk_user_post (user_id, post_id)
-//);
 }

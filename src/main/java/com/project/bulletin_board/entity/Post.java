@@ -23,8 +23,8 @@ public class Post {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 5. 지연 로딩 (성능 최적화)
-    @JoinColumn(name = "user_id") // 6. DB의 'user_id' 컬럼과 매핑
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,15 +49,28 @@ public class Post {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "like_count")
+    private long likeCount = 0L;
 
-    @Formula("(SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = id)")
-    private long likeCount;
-
-    @Formula("(SELECT COUNT(*) FROM comments c WHERE c.post_id = id)")
-    private long commentCount;
+    @Column(name = "comment_count")
+    private long commentCount=0L;
 
     public void update(String title, String content){
         this.title = title;
         this.content = content;
     }
+
+    public void increaseLikeCount() {
+        this.likeCount += 1;
+    }
+    public void decreaseLikeCount() {
+        this.likeCount -= 1;
+    }
+    public void increaseCommentCount() {
+        this.commentCount += 1;
+    }
+    public void decreaseCommentCount() {
+        this.commentCount -= 1;
+    }
+
 }

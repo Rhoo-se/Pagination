@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 
-@EntityScan("com.project.bulletin_board.entity") // 👈 3. 엔티티 위치 알려주기
+@EntityScan("com.project.bulletin_board.entity")
 @EnableJpaRepositories("com.project.bulletin_board.repository")
 @SpringBootApplication
 public class BulletinBoardApplication {
