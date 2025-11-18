@@ -51,7 +51,8 @@ public class LikeService {
         // 2. post_likes 테이블에서 기록 삭제
         postLikeRepository.delete(postLike);
 
-        // 3. ⭐️ posts 테이블의 like_count 1 감소 (Atomic 연산)
+
+        // 3.  posts 테이블의 like_count 1 감소 (Atomic 연산)
         postJpaRepository.decrementLikeCount(postId);
     }
 }

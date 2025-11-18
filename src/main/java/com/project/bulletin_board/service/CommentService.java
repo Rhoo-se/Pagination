@@ -30,7 +30,9 @@ public class CommentService {
                 .build();
         commentRepository.save(comment);
 
-        // 2. ⭐️ posts 테이블의 comment_count 1 증가 (Atomic 연산)
+
+        // 2. posts 테이블의 comment_count 1 증가 (Atomic 연산)
+
         postJpaRepository.incrementCommentCount(postId);
     }
 
@@ -51,7 +53,9 @@ public class CommentService {
         // 3. comments 테이블에서 댓글 삭제
         commentRepository.delete(comment);
 
-        // 4. ⭐️ posts 테이블의 comment_count 1 감소 (Atomic 연산)
+
+        // 4.️ posts 테이블의 comment_count 1 감소 (Atomic 연산)
+
         //    (댓글 엔티티에서 postId를 꺼내서 사용)
         postJpaRepository.decrementCommentCount(comment.getPost().getId());
     }
